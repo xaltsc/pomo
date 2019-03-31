@@ -128,6 +128,32 @@ function pomo_clock {
     fi
 }
 
+function pomo_xmobar {
+    # Print out how much time is remaining in block.
+    # WMM:SS indicates MM:SS left in the work block.
+    # BMM:SS indicates MM:SS left in the break block.
+    if [[ -e $POMO ]]; then
+        pomo_update
+        running=$(pomo_stat)
+        left=$(( WORK_TIME*60 - running ))
+        if [[ $left -lt 0 ]]; then
+            left=$(( left + BREAK_TIME*60 ))
+            prefix=''
+            color='#00bcd4'
+        else
+            prefix=''
+            color='#052e34,#26c6da'
+        fi
+      pomo_ispaused && prefix=''$prefix
+      prefix="<fn=1>$prefix</fn>"
+        min=$(( left / 60 ))
+        sec=$(( left - 60*min ))
+        printf "<fc=$color>%2s %02d:%02d</fc>\n" $prefix $min $sec
+    else
+        printf ""
+    fi
+}
+
 function pomo_status {
     while true; do
         echo $(pomo_clock)
@@ -188,7 +214,7 @@ function send_msg {
 function pomo_usage {
     # Print out usage message.
     cat <<END
-pomo.sh [-h] [start | stop | pause | clock | status | notify | usage]
+pomo.sh [-h] [start | stop | pause | clock | status | notify | usage | xmobar]
 
 pomo.sh - a simple Pomodoro timer.
 
@@ -210,6 +236,8 @@ clock
     Pomodoro cycle.  A prefix of B indicates a break period, a prefix of
     W indicates a work period and a prefix of P indicates the current period is
     paused.
+xmobar
+    Print an output similar to clock, but fitted for my xmobar config.
 notify
     Raise a notification at the end of every Pomodoro work and break block
     (requires notify-send).
@@ -247,7 +275,7 @@ while getopts h arg; do
 done
 shift $(($OPTIND-1))
 
-actions="start stop pause clock usage notify status"
+actions="start stop pause clock usage notify status xmobar"
 for act in $actions; do
     if [[ $act == $1 ]]; then
         action=$act
